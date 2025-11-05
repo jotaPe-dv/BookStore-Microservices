@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: bookstore-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bookstore_auth
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    image: bookstore-auth-service:latest
+    container_name: bookstore-auth
+    environment:
+      DATABASE_URI: mysql+pymysql://root:rootpassword@mysql:3306/bookstore_auth
+      SECRET_KEY: secretkey-local
+      JWT_SECRET_KEY: jwt-secret-key-local
+    ports:
+      - "30001:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Catalog Service
+  catalog-service:
+    image: bookstore-catalog-service:latest
+    container_name: bookstore-catalog
+    environment:
+      DATABASE_URI: mysql+pymysql://root:rootpassword@mysql:3306/bookstore_catalog
+      AUTH_SERVICE_URL: http://auth-service:5001
+      SECRET_KEY: secretkey-local
+      JWT_SECRET_KEY: jwt-secret-hardcoded-bookstore
+    ports:
+      - "30002:5002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Orders Service
+  orders-service:
+    image: bookstore-orders-service:latest
+    container_name: bookstore-orders
+    environment:
+      DATABASE_URI: mysql+pymysql://root:rootpassword@mysql:3306/bookstore_orders
+      AUTH_SERVICE_URL: http://auth-service:5001
+      SECRET_KEY: secretkey-local
+    ports:
+      - "30003:5003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+networks:
+  bookstore-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

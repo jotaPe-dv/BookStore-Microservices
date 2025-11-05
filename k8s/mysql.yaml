@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-script
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS bookstore_auth;
+    CREATE DATABASE IF NOT EXISTS bookstore_catalog;
+    CREATE DATABASE IF NOT EXISTS bookstore_orders;
+    GRANT ALL PRIVILEGES ON bookstore_auth.* TO 'bookuser'@'%';
+    GRANT ALL PRIVILEGES ON bookstore_catalog.* TO 'bookuser'@'%';
+    GRANT ALL PRIVILEGES ON bookstore_orders.* TO 'bookuser'@'%';
+    FLUSH PRIVILEGES;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "rootpass"
+        - name: MYSQL_DATABASE
+          value: "bookstore_auth"
+        - name: MYSQL_USER
+          value: "bookuser"
+        - name: MYSQL_PASSWORD
+          value: "bookpass"
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: mysql-init
+        configMap:
+          name: mysql-init-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: mysql
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: mysql
