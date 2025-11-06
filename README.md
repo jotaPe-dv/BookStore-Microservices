@@ -1,13 +1,11 @@
 # BookStore Microservices - Proyecto 2 (Objetivo 4)
 
-## Universidad EAFIT - ST0263 Tópicos Especiales en Telemática 2025-2
----
 
 ## Proyecto 2 - Objetivo 4, Opción 1: Reingeniería del Monolito hacia una Arquitectura de Microservicios
 
 Sistema de comercio electrónico para venta de libros, implementado bajo una arquitectura de microservicios y desplegado en AWS EC2.
 
-**Descripción General:**
+## Descripción General:
 
 Este repositorio contiene la implementación correspondiente al Objetivo 4 del Proyecto 2, enfocado en la reingeniería de la aplicación BookStore desde una arquitectura monolítica hacia un modelo distribuido basado en microservicios.
 
