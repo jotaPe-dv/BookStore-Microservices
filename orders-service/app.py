@@ -16,6 +16,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # URL del servicio de autenticación
 AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'http://auth-service:5001')
+# URL del servicio de catálogo
+CATALOG_SERVICE_URL = os.getenv('CATALOG_SERVICE_URL', 'http://catalog-service:5002')
 
 db = SQLAlchemy(app)
 
@@ -252,35 +254,47 @@ def create_purchase():
     if not all(k in data for k in ['book_id', 'quantity']):
         return jsonify({'error': 'Missing required fields'}), 400
     
-    book = Book.query.get(data['book_id'])
-    if not book:
-        return jsonify({'error': 'Book not found'}), 404
+    # Consultar al catalog-service para obtener información del libro
+    try:
+        catalog_response = requests.get(
+            f'{CATALOG_SERVICE_URL}/catalog/{data["book_id"]}',
+            timeout=5
+        )
+        
+        if catalog_response.status_code != 200:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        book_data = catalog_response.json().get('book')
+        if not book_data:
+            return jsonify({'error': 'Book not found'}), 404
+            
+    except Exception as e:
+        print(f"Error fetching book from catalog: {e}")
+        return jsonify({'error': 'Error fetching book information'}), 500
     
     quantity = int(data['quantity'])
     
-    if book.stock < quantity:
+    if book_data['stock'] < quantity:
         return jsonify({'error': 'Insufficient stock'}), 400
     
-    total_price = book.price * quantity
+    total_price = book_data['price'] * quantity
     
     # Crear la compra
     new_purchase = Purchase(
         user_id=user['id'],
-        book_id=book.id,
+        book_id=book_data['id'],
         quantity=quantity,
         total_price=total_price,
         status='Pending Payment'
     )
-    
-    # Reducir stock
-    book.stock -= quantity
     
     db.session.add(new_purchase)
     db.session.commit()
     
     return jsonify({
         'message': 'Purchase created successfully',
-        'purchase': new_purchase.to_dict()
+        'purchase': new_purchase.to_dict(),
+        'book': book_data
     }), 201
 
 @app.route('/purchases', methods=['GET'])

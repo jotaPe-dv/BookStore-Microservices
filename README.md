@@ -87,37 +87,24 @@ El balanceo de tráfico se gestiona mediante NGINX Ingress, el cual enruta las p
 
 │                                                 │Servicios disponibles:
 
-│  ┌─────────────────────────────────────────┐   │- Auth: http://localhost:5001
+│  ┌─────────────────────────────────────────┐   │
 
-│  │        Docker Compose                   │   │- Catalog: http://localhost:5002
+│  │        Docker Compose                   │   │
 
-│  │                                         │   │- Orders: http://localhost:5003
-
+│  │                                         │   │
 │  │  ┌──────────┐  ┌──────────┐  ┌────────┐│   │
-
-│  │  │  Auth    │  │ Catalog  │  │ Orders ││   │### ProducciÃ³n (Kubernetes)
-
+│  │  │  Auth    │  │ Catalog  │  │ Orders ││   │
 │  │  │ Service  │  │ Service  │  │ Service││   │
-
-│  │  │  :30001  │  │  :30002  │  │ :30003 ││   │```powershell
-
-│  │  └────┬─────┘  └────┬─────┘  └───┬────┘│   │# Build y push a ECR
-
-│  │       └─────────────┼────────────┘     │   │.\build-and-push.ps1
-
+│  │  │  :30001  │  │  :30002  │  │ :30003 ││   │
+│  │  └────┬─────┘  └────┬─────┘  └───┬────┘│   │
+│  │       └─────────────┼────────────┘     │   │
 │  │                     │                  │   │
-
-│  │              ┌──────▼──────┐           │   │# Desplegar en Kubernetes
-
-│  │              │    MySQL    │           │   │cd k8s
-
-│  │              │   3 schemas │           │   │kubectl apply -f .
-
+│  │              ┌──────▼──────┐           │   │
+│  │              │    MySQL    │           │   │
+│  │              │   3 schemas │           │   │
 │  │              └─────────────┘           │   │```
-
-│  └─────────────────────────────────────────┘   │
-
-└─────────────────────────────────────────────────┘## ðŸ“š DocumentaciÃ³n
+│  └─────────────────────────────────────────┘  
+└─────────────────────────────────────────────────┘
 
 ```
 
